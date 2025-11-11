@@ -1,36 +1,119 @@
 """
-Project: MathQuest — mini-site with math levels
-Description: A Flask web app where users solve math problems and move through levels.
+Project: MathQuest — стильный сайт с математическими уровнями
+Description: Улучшенная версия с красивым интерфейсом и плавными эффектами.
 """
 
 from flask import Flask, render_template_string, request, redirect, url_for, session
 import random
 
 app = Flask(__name__)
-app.secret_key = "supersecretkey"  # нужен для хранения данных сессии
+app.secret_key = "supersecretkey"
 
-# HTML-шаблон
 page = """
 <!doctype html>
 <html>
 <head>
     <title>MathQuest — Level {{ level }}</title>
     <style>
-        body { font-family: Arial, sans-serif; background: #f0f2f5; }
-        .container { width: 400px; margin: 80px auto; background: white; padding: 25px; border-radius: 10px;
-                     box-shadow: 0 0 10px rgba(0,0,0,0.2); text-align: center; }
-        h1 { color: #333; }
-        input[type=number] { width: 120px; padding: 5px; font-size: 16px; }
-        button { margin-top: 10px; padding: 8px 18px; font-size: 16px; }
-        .result { font-size: 18px; margin-top: 15px; }
-        .score { color: #007bff; margin-top: 10px; }
-        a { text-decoration: none; color: white; background: #007bff; padding: 6px 12px; border-radius: 6px; }
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            height: 100vh;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(12px);
+            border-radius: 20px;
+            padding: 30px 40px;
+            text-align: center;
+            width: 380px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.25);
+            animation: fadeIn 0.8s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        h1 {
+            margin-bottom: 10px;
+            color: #fff;
+        }
+
+        p {
+            font-size: 18px;
+        }
+
+        input[type=number] {
+            width: 120px;
+            padding: 8px;
+            font-size: 18px;
+            border-radius: 10px;
+            border: none;
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        button {
+            margin-top: 20px;
+            padding: 10px 25px;
+            font-size: 18px;
+            border: none;
+            border-radius: 10px;
+            background: linear-gradient(90deg, #00c6ff, #0072ff);
+            color: white;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 15px rgba(0, 114, 255, 0.6);
+        }
+
+        .result {
+            margin-top: 20px;
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .score {
+            margin-top: 8px;
+            font-size: 16px;
+            color: #ffe082;
+        }
+
+        a {
+            display: inline-block;
+            text-decoration: none;
+            background: linear-gradient(90deg, #ff6a00, #ee0979);
+            padding: 10px 20px;
+            border-radius: 10px;
+            color: white;
+            margin-top: 15px;
+            transition: 0.3s;
+        }
+
+        a:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 15px rgba(255, 106, 0, 0.5);
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Level {{ level }}</h1>
-        <p><b>Score:</b> {{ score }}</p>
+        <h1>🌟 MathQuest</h1>
+        <h2>Level {{ level }}</h2>
+        <div class="score">🏅 Score: {{ score }}</div>
 
         {% if not result %}
         <form method="POST">
@@ -39,15 +122,16 @@ page = """
             <input type="hidden" name="b" value="{{b}}">
             <input type="hidden" name="op" value="{{op}}">
             <input type="number" step="0.01" name="answer" required>
-            <br><button type="submit">Check</button>
+            <br>
+            <button type="submit">Check</button>
         </form>
         {% else %}
         <div class="result">{{ result }}</div>
             {% if next_level %}
-                <p><a href="{{ url_for('level', level=next_level) }}">Next level →</a></p>
+                <a href="{{ url_for('level', level=next_level) }}">Next level →</a>
             {% else %}
-                <p>🎉 Congratulations! You've completed all levels!</p>
-                <p><a href="{{ url_for('restart') }}">Restart</a></p>
+                <p>🎉 Congratulations! You’ve completed all levels!</p>
+                <a href="{{ url_for('restart') }}">Restart</a>
             {% endif %}
         {% endif %}
     </div>
@@ -106,7 +190,7 @@ def level(level):
         result = None
         next_level = None
 
-    return render_template_string(page, a=a, b=b, op=op, result=result, 
+    return render_template_string(page, a=a, b=b, op=op, result=result,
                                   level=level, next_level=next_level, score=session["score"])
 
 
@@ -117,4 +201,4 @@ def restart():
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    app.run(host="0.0.0.0", port=5000)
