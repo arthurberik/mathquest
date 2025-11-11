@@ -1,7 +1,4 @@
-"""
-Project: MathQuest — стильный сайт с математическими уровнями
-Description: Улучшенная версия с красивым интерфейсом и плавными эффектами.
-"""
+
 
 from flask import Flask, render_template_string, request, redirect, url_for, session
 import random
@@ -139,7 +136,6 @@ page = """
 </html>
 """
 
-# === Генерация задач ===
 def generate_task(level):
     if level == 1:
         a, b = random.randint(1, 10), random.randint(1, 10)
