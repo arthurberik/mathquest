@@ -1,200 +1,161 @@
+"""
+Project: MathQuest — mini-site with math problems
+Author: [your name]
+Description: website where user chooses difficulty and solves math problems
+"""
 
-
-from flask import Flask, render_template_string, request, redirect, url_for, session
+from flask import Flask, render_template_string, request
 import random
+import sympy as sp
 
 app = Flask(__name__)
-app.secret_key = "supersecretkey"
 
-page = """
+# ------------------- HTML TEMPLATES -------------------
+
+difficulty_page = """
 <!doctype html>
 <html>
 <head>
-    <title>MathQuest — Level {{ level }}</title>
+    <title>MathQuest — Difficulty</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap');
-
-        body {
-            font-family: 'Poppins', sans-serif;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            height: 100vh;
-            margin: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #fff;
-        }
-
-        .container {
-            background: rgba(255, 255, 255, 0.15);
-            backdrop-filter: blur(12px);
-            border-radius: 20px;
-            padding: 30px 40px;
-            text-align: center;
-            width: 380px;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.25);
-            animation: fadeIn 0.8s ease;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        h1 {
-            margin-bottom: 10px;
-            color: #fff;
-        }
-
-        p {
-            font-size: 18px;
-        }
-
-        input[type=number] {
-            width: 120px;
-            padding: 8px;
-            font-size: 18px;
-            border-radius: 10px;
-            border: none;
-            text-align: center;
-            margin-top: 10px;
-        }
-
-        button {
-            margin-top: 20px;
-            padding: 10px 25px;
-            font-size: 18px;
-            border: none;
-            border-radius: 10px;
-            background: linear-gradient(90deg, #00c6ff, #0072ff);
-            color: white;
-            cursor: pointer;
-            transition: 0.3s;
-        }
-
-        button:hover {
-            transform: scale(1.05);
-            box-shadow: 0 0 15px rgba(0, 114, 255, 0.6);
-        }
-
-        .result {
-            margin-top: 20px;
-            font-size: 20px;
-            font-weight: 600;
-        }
-
-        .score {
-            margin-top: 8px;
-            font-size: 16px;
-            color: #ffe082;
-        }
-
-        a {
-            display: inline-block;
-            text-decoration: none;
-            background: linear-gradient(90deg, #ff6a00, #ee0979);
-            padding: 10px 20px;
-            border-radius: 10px;
-            color: white;
-            margin-top: 15px;
-            transition: 0.3s;
-        }
-
-        a:hover {
-            transform: scale(1.05);
-            box-shadow: 0 0 15px rgba(255, 106, 0, 0.5);
-        }
+        body { font-family: Arial; background: #f0f2f5; }
+        .container { width: 400px; margin: 80px auto; background: white; padding: 25px; border-radius: 10px; text-align:center; }
+        button { padding: 10px 20px; margin: 10px; font-size: 18px; cursor:pointer; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>🌟 MathQuest</h1>
-        <h2>Level {{ level }}</h2>
-        <div class="score">🏅 Score: {{ score }}</div>
-
-        {% if not result %}
-        <form method="POST">
-            <p><b>Task:</b> {{a}} {{op}} {{b}} = ?</p>
-            <input type="hidden" name="a" value="{{a}}">
-            <input type="hidden" name="b" value="{{b}}">
-            <input type="hidden" name="op" value="{{op}}">
-            <input type="number" step="0.01" name="answer" required>
-            <br>
-            <button type="submit">Check</button>
-        </form>
-        {% else %}
-        <div class="result">{{ result }}</div>
-            {% if next_level %}
-                <a href="{{ url_for('level', level=next_level) }}">Next level →</a>
-            {% else %}
-                <p>🎉 Congratulations! You’ve completed all levels!</p>
-                <a href="{{ url_for('restart') }}">Restart</a>
-            {% endif %}
-        {% endif %}
-    </div>
+<div class="container">
+    <h1>Select difficulty</h1>
+    <form method="GET" action="/play">
+        {% for d in [1,2,3,4,5] %}
+            <button name="difficulty" value="{{d}}">{{ "⭐" * d }}</button>
+        {% endfor %}
+    </form>
+</div>
 </body>
 </html>
 """
 
-def generate_task(level):
-    if level == 1:
-        a, b = random.randint(1, 10), random.randint(1, 10)
-        op = random.choice(["+", "-"])
-    elif level == 2:
-        a, b = random.randint(5, 20), random.randint(1, 10)
-        op = random.choice(["+", "-", "*"])
-    else:
-        a, b = random.randint(10, 50), random.randint(1, 10)
-        op = random.choice(["+", "-", "*", "/"])
-    return a, b, op
+play_page = """
+<!doctype html>
+<html>
+<head>
+    <title>MathQuest</title>
+    <style>
+        body { font-family: Arial; background: #f0f2f5; }
+        .container { width: 400px; margin: 80px auto; background: white; padding: 25px; border-radius: 10px; text-align:center; }
+        input[type=text] { width: 200px; padding: 5px; font-size: 16px; }
+        button { margin-top: 10px; padding: 5px 15px; font-size: 16px; }
+        .result { margin-top: 15px; font-size: 18px; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h2>Difficulty: {{stars}}</h2>
 
+    <form method="POST">
+        <p><b>Problem:</b> {{problem_text}}</p>
+        <input type="hidden" name="difficulty" value="{{difficulty}}">
+        <input type="hidden" name="correct" value="{{correct}}">
+        <input type="text" name="answer" required>
+        <br><button type="submit">Check</button>
+    </form>
+
+    {% if result %}
+    <div class="result">{{ result }}</div>
+    {% endif %}
+</div>
+</body>
+</html>
+"""
+
+# ------------------- PROBLEM GENERATION -------------------
+
+def generate_problem(difficulty):
+    if difficulty == 1:
+        # Easy: + -
+        a, b = random.randint(1, 20), random.randint(1, 20)
+        op = random.choice(["+", "-"])
+        expr = f"{a} {op} {b}"
+        correct = eval(expr)
+
+    elif difficulty == 2:
+        # Medium: * /
+        a, b = random.randint(2, 12), random.randint(2, 12)
+        op = random.choice(["*", "/"])
+        expr = f"{a} {op} {b}"
+        correct = round(eval(expr), 2)
+
+    elif difficulty == 3:
+        # Harder: multiple operations
+        a,b,c = random.randint(1,20), random.randint(1,20), random.randint(1,20)
+        ops = random.choice(["+", "-", "*"])
+        expr = f"{a} {ops} {b} * {c}"
+        correct = eval(expr)
+
+    elif difficulty == 4:
+        # Very hard: brackets
+        a,b,c = random.randint(1,20), random.randint(1,20), random.randint(1,20)
+        expr = f"({a} + {b}) * {c}"
+        correct = eval(expr)
+
+    else:
+        # Difficulty 5 — basic university math
+        x = sp.symbols("x")
+        tasks = [
+            ("Derivative of x^3?", sp.diff(x**3, x)),
+            ("Derivative of sin(x)?", sp.diff(sp.sin(x), x)),
+            ("Derivative of ln(x)?", sp.diff(sp.log(x), x)),
+            ("Integral of x dx?", sp.integrate(x, x)),
+            ("Integral of 1/x dx?", sp.integrate(1/x, x)),
+            ("Limit of sin(x)/x as x->0?", sp.limit(sp.sin(x)/x, x, 0)),
+        ]
+        problem_text, solution = random.choice(tasks)
+        return problem_text, str(solution)
+
+    return expr, str(correct)
+
+# ------------------- ROUTES -------------------
 
 @app.route("/")
-def home():
-    session["score"] = 0
-    return redirect(url_for("level", level=1))
+def difficulty():
+    return render_template_string(difficulty_page)
 
-
-@app.route("/level/<int:level>", methods=["GET", "POST"])
-def level(level):
-    score = session.get("score", 0)
-    a, b, op = generate_task(level)
-
+@app.route("/play", methods=["GET", "POST"])
+def play():
     if request.method == "POST":
-        a = int(request.form["a"])
-        b = int(request.form["b"])
-        op = request.form["op"]
-        user_answer = float(request.form["answer"])
+        user_answer = request.form["answer"].strip()
+        correct = request.form["correct"].strip()
+        difficulty = int(request.form["difficulty"])
 
-        if op == "+":
-            correct = a + b
-        elif op == "-":
-            correct = a - b
-        elif op == "*":
-            correct = a * b
-        else:
-            correct = round(a / b, 2)
-
-        if abs(user_answer - correct) < 0.01:
-            session["score"] = score + 10
-            result = f"✅ Correct! {a} {op} {b} = {correct}"
-            next_level = level + 1 if level < 3 else None
+        if user_answer == correct:
+            result = f"✅ Correct! The answer is {correct}"
         else:
             result = f"❌ Incorrect. Correct answer: {correct}"
-            next_level = level
-    else:
-        result = None
-        next_level = None
 
-    return render_template_string(page, a=a, b=b, op=op, result=result,
-                                  level=level, next_level=next_level, score=session["score"])
+        problem_text, correct_answer = generate_problem(difficulty)
+        return render_template_string(
+            play_page,
+            difficulty=difficulty,
+            stars="⭐" * difficulty,
+            problem_text=problem_text,
+            correct=correct_answer,
+            result=result,
+        )
 
+    # GET: first load after selecting difficulty
+    difficulty = int(request.args.get("difficulty", 1))
+    problem_text, correct = generate_problem(difficulty)
 
-@app.route("/restart")
-def restart():
-    session.clear()
-    return redirect(url_for("home"))
+    return render_template_string(
+        play_page,
+        difficulty=difficulty,
+        stars="⭐" * difficulty,
+        problem_text=problem_text,
+        correct=correct,
+        result=None,
+    )
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+    app.run(debug=True)
