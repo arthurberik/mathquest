@@ -1,7 +1,7 @@
 """
 Project: MathQuest — mini-site with math problems
 Author: [your name]
-Description: website with difficulty levels and math tasks
+Description: website where users choose difficulty and solve math tasks
 """
 
 from flask import Flask, render_template_string, request
@@ -11,13 +11,14 @@ app = Flask(__name__)
 
 # ---------------------- TEMPLATES ----------------------
 
+# Difficulty selection page
 difficulty_page = """
 <!doctype html>
 <html>
 <head>
     <title>MathQuest — Difficulty</title>
     <style>
-        body { font-family: Arial; background: #f0f2f5; }
+        body { font-family: Arial, sans-serif; background: #f0f2f5; }
         .container {
             width: 400px; margin: 80px auto; background: white;
             padding: 25px; border-radius: 10px;
@@ -25,12 +26,13 @@ difficulty_page = """
             text-align: center;
         }
         button {
-            margin: 10px; padding: 10px 20px;
-            font-size: 18px; border-radius: 8px;
-            cursor: pointer; border: none;
-            background: #4a78ff; color: white;
+            margin: 10px; padding: 12px 20px;
+            font-size: 20px; border-radius: 10px;
+            border: none; background: #4c7bff; color: white;
+            cursor: pointer;
         }
-        button:hover { background: #365bd1; }
+        button:hover { background: #3659d1; }
+        h1 { color: #333; }
     </style>
 </head>
 <body>
@@ -46,13 +48,14 @@ difficulty_page = """
 </html>
 """
 
+# Problem gameplay page
 game_page = """
 <!doctype html>
 <html>
 <head>
     <title>MathQuest</title>
     <style>
-        body { font-family: Arial; background: #f0f2f5; }
+        body { font-family: Arial, sans-serif; background: #f0f2f5; }
         .container {
             width: 400px; margin: 80px auto; background: white;
             padding: 25px; border-radius: 10px;
@@ -60,8 +63,8 @@ game_page = """
         }
         h1 { text-align: center; color: #333; }
         form { text-align: center; }
-        input[type=number], input[type=text] {
-            width: 120px; padding: 7px; font-size: 18px;
+        input[type=number] {
+            width: 120px; padding: 6px; font-size: 18px;
         }
         button {
             margin-top: 10px; padding: 7px 15px;
@@ -75,18 +78,27 @@ game_page = """
             margin-top: 15px; padding: 10px;
             border-radius: 8px;
         }
+        .back-btn {
+            margin-top: 20px;
+            background: #ff5b5b;
+        }
+        .back-btn:hover {
+            background: #d94a4a;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>MathQuest {{stars}}</h1>
+
         <form method="POST">
             <p><b>Task:</b> {{problem}}</p>
+
             <input type="hidden" name="correct" value="{{correct}}">
             <input type="hidden" name="difficulty" value="{{difficulty}}">
             <input type="number" step="0.01" name="answer" required>
-            <br>
-            <button type="submit">Check</button>
+
+            <br><button type="submit">Check</button>
         </form>
 
         {% if result %}
@@ -94,7 +106,7 @@ game_page = """
         {% endif %}
 
         <form method="GET" action="/">
-            <button style="margin-top:20px; background:#ff5757;">Change level</button>
+            <button class="back-btn">Change level</button>
         </form>
     </div>
 </body>
@@ -104,56 +116,56 @@ game_page = """
 # ---------------------- PROBLEM GENERATION ----------------------
 
 def generate_problem(level):
-    # LEVEL 1 – Easy addition/subtraction
+    """
+    Generates a problem depending on chosen difficulty level.
+    """
+
+    # ⭐ LEVEL 1 — addition / subtraction
     if level == 1:
         a, b = random.randint(1, 20), random.randint(1, 20)
         op = random.choice(["+", "-"])
         expr = f"{a} {op} {b}"
-        correct = eval(expr)
+        return expr, eval(expr)
 
-    # LEVEL 2 – Multiplication / Division
+    # ⭐⭐ LEVEL 2 — multiplication / division
     elif level == 2:
-        a, b = random.randint(2, 12), random.randint(2, 12)
+        a, b = random.randint(2, 15), random.randint(2, 15)
         op = random.choice(["*", "/"])
         expr = f"{a} {op} {b}"
-        correct = round(eval(expr), 2)
+        return expr, round(eval(expr), 2)
 
-    # LEVEL 3 – Mixed operations
+    # ⭐⭐⭐ LEVEL 3 — multiple operations
     elif level == 3:
-        a,b,c = random.randint(1,20), random.randint(1,20), random.randint(1,20)
+        a, b, c = random.randint(1, 15), random.randint(1, 15), random.randint(1, 15)
         expr = f"{a} + {b} * {c}"
-        correct = a + b*c
+        return expr, a + b * c
 
-    # LEVEL 4 – Brackets
+    # ⭐⭐⭐⭐ LEVEL 4 — parentheses
     elif level == 4:
-        a,b,c = random.randint(1,20), random.randint(1,20), random.randint(1,20)
+        a, b, c = random.randint(1, 15), random.randint(1, 15), random.randint(1, 15)
         expr = f"({a} + {b}) * {c}"
-        correct = (a + b) * c
+        return expr, (a + b) * c
 
-    # LEVEL 5 – Harder numeric tasks (no SymPy)
+    # ⭐⭐⭐⭐⭐ LEVEL 5 — harder numeric problems (no SymPy)
     else:
         tasks = [
-            ("What is 12²?", 144),
-            ("What is 15³?", 3375),
-            ("Solve: 2x + 6 = 18 (find x)", 6),
-            ("Simplify: (5*4) - (3*2)", 14),
-            ("What is √144?", 12),
+            ("12²", 144),
+            ("√144", 12),
+            ("15³", 3375),
+            ("Solve 2x + 10 = 30 (x=?)", 10),
+            ("(5×8) – (4×3)", 28),
         ]
-        expr, correct = random.choice(tasks)
-
-        return expr, correct
-
-    return expr, correct
+        return random.choice(tasks)
 
 # ---------------------- ROUTES ----------------------
 
 @app.route("/")
-def choose():
+def home():
     return render_template_string(difficulty_page)
 
 @app.route("/play", methods=["GET", "POST"])
 def play():
-    # POST: checking an answer
+    # --- POST → checking an answer ---
     if request.method == "POST":
         correct = float(request.form["correct"])
         level = int(request.form["difficulty"])
@@ -169,12 +181,12 @@ def play():
             game_page,
             problem=problem,
             correct=new_correct,
-            result=result,
-            stars="⭐" * level,
-            difficulty=level
+            difficulty=level,
+            stars="⭐"*level,
+            result=result
         )
 
-    # GET: first entry after choosing difficulty
+    # --- GET → starting the level ---
     level = int(request.args.get("difficulty", 1))
     problem, correct = generate_problem(level)
 
@@ -182,9 +194,9 @@ def play():
         game_page,
         problem=problem,
         correct=correct,
-        result=None,
-        stars="⭐" * level,
-        difficulty=level
+        difficulty=level,
+        stars="⭐"*level,
+        result=None
     )
 
 
