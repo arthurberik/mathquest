@@ -1,16 +1,15 @@
 """
 Project: MathQuest — mini-site with math problems
 Author: [your name]
-Description: website where user chooses difficulty and solves math problems
+Description: website with difficulty levels and math tasks
 """
 
 from flask import Flask, render_template_string, request
 import random
-import sympy as sp
 
 app = Flask(__name__)
 
-# ------------------- HTML TEMPLATES -------------------
+# ---------------------- TEMPLATES ----------------------
 
 difficulty_page = """
 <!doctype html>
@@ -19,13 +18,24 @@ difficulty_page = """
     <title>MathQuest — Difficulty</title>
     <style>
         body { font-family: Arial; background: #f0f2f5; }
-        .container { width: 400px; margin: 80px auto; background: white; padding: 25px; border-radius: 10px; text-align:center; }
-        button { padding: 10px 20px; margin: 10px; font-size: 18px; cursor:pointer; }
+        .container {
+            width: 400px; margin: 80px auto; background: white;
+            padding: 25px; border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.2);
+            text-align: center;
+        }
+        button {
+            margin: 10px; padding: 10px 20px;
+            font-size: 18px; border-radius: 8px;
+            cursor: pointer; border: none;
+            background: #4a78ff; color: white;
+        }
+        button:hover { background: #365bd1; }
     </style>
 </head>
 <body>
 <div class="container">
-    <h1>Select difficulty</h1>
+    <h1>Select Difficulty</h1>
     <form method="GET" action="/play">
         {% for d in [1,2,3,4,5] %}
             <button name="difficulty" value="{{d}}">{{ "⭐" * d }}</button>
@@ -36,124 +46,145 @@ difficulty_page = """
 </html>
 """
 
-play_page = """
+game_page = """
 <!doctype html>
 <html>
 <head>
     <title>MathQuest</title>
     <style>
         body { font-family: Arial; background: #f0f2f5; }
-        .container { width: 400px; margin: 80px auto; background: white; padding: 25px; border-radius: 10px; text-align:center; }
-        input[type=text] { width: 200px; padding: 5px; font-size: 16px; }
-        button { margin-top: 10px; padding: 5px 15px; font-size: 16px; }
-        .result { margin-top: 15px; font-size: 18px; }
+        .container {
+            width: 400px; margin: 80px auto; background: white;
+            padding: 25px; border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.2);
+        }
+        h1 { text-align: center; color: #333; }
+        form { text-align: center; }
+        input[type=number], input[type=text] {
+            width: 120px; padding: 7px; font-size: 18px;
+        }
+        button {
+            margin-top: 10px; padding: 7px 15px;
+            font-size: 16px; border-radius: 8px;
+            background: #4a78ff; color: white; border: none;
+            cursor: pointer;
+        }
+        button:hover { background: #365bd1; }
+        .result {
+            text-align: center; font-size: 18px;
+            margin-top: 15px; padding: 10px;
+            border-radius: 8px;
+        }
     </style>
 </head>
 <body>
-<div class="container">
-    <h2>Difficulty: {{stars}}</h2>
+    <div class="container">
+        <h1>MathQuest {{stars}}</h1>
+        <form method="POST">
+            <p><b>Task:</b> {{problem}}</p>
+            <input type="hidden" name="correct" value="{{correct}}">
+            <input type="hidden" name="difficulty" value="{{difficulty}}">
+            <input type="number" step="0.01" name="answer" required>
+            <br>
+            <button type="submit">Check</button>
+        </form>
 
-    <form method="POST">
-        <p><b>Problem:</b> {{problem_text}}</p>
-        <input type="hidden" name="difficulty" value="{{difficulty}}">
-        <input type="hidden" name="correct" value="{{correct}}">
-        <input type="text" name="answer" required>
-        <br><button type="submit">Check</button>
-    </form>
+        {% if result %}
+        <div class="result">{{ result }}</div>
+        {% endif %}
 
-    {% if result %}
-    <div class="result">{{ result }}</div>
-    {% endif %}
-</div>
+        <form method="GET" action="/">
+            <button style="margin-top:20px; background:#ff5757;">Change level</button>
+        </form>
+    </div>
 </body>
 </html>
 """
 
-# ------------------- PROBLEM GENERATION -------------------
+# ---------------------- PROBLEM GENERATION ----------------------
 
-def generate_problem(difficulty):
-    if difficulty == 1:
-        # Easy: + -
+def generate_problem(level):
+    # LEVEL 1 – Easy addition/subtraction
+    if level == 1:
         a, b = random.randint(1, 20), random.randint(1, 20)
         op = random.choice(["+", "-"])
         expr = f"{a} {op} {b}"
         correct = eval(expr)
 
-    elif difficulty == 2:
-        # Medium: * /
+    # LEVEL 2 – Multiplication / Division
+    elif level == 2:
         a, b = random.randint(2, 12), random.randint(2, 12)
         op = random.choice(["*", "/"])
         expr = f"{a} {op} {b}"
         correct = round(eval(expr), 2)
 
-    elif difficulty == 3:
-        # Harder: multiple operations
+    # LEVEL 3 – Mixed operations
+    elif level == 3:
         a,b,c = random.randint(1,20), random.randint(1,20), random.randint(1,20)
-        ops = random.choice(["+", "-", "*"])
-        expr = f"{a} {ops} {b} * {c}"
-        correct = eval(expr)
+        expr = f"{a} + {b} * {c}"
+        correct = a + b*c
 
-    elif difficulty == 4:
-        # Very hard: brackets
+    # LEVEL 4 – Brackets
+    elif level == 4:
         a,b,c = random.randint(1,20), random.randint(1,20), random.randint(1,20)
         expr = f"({a} + {b}) * {c}"
-        correct = eval(expr)
+        correct = (a + b) * c
 
+    # LEVEL 5 – Harder numeric tasks (no SymPy)
     else:
-        # Difficulty 5 — basic university math
-        x = sp.symbols("x")
         tasks = [
-            ("Derivative of x^3?", sp.diff(x**3, x)),
-            ("Derivative of sin(x)?", sp.diff(sp.sin(x), x)),
-            ("Derivative of ln(x)?", sp.diff(sp.log(x), x)),
-            ("Integral of x dx?", sp.integrate(x, x)),
-            ("Integral of 1/x dx?", sp.integrate(1/x, x)),
-            ("Limit of sin(x)/x as x->0?", sp.limit(sp.sin(x)/x, x, 0)),
+            ("What is 12²?", 144),
+            ("What is 15³?", 3375),
+            ("Solve: 2x + 6 = 18 (find x)", 6),
+            ("Simplify: (5*4) - (3*2)", 14),
+            ("What is √144?", 12),
         ]
-        problem_text, solution = random.choice(tasks)
-        return problem_text, str(solution)
+        expr, correct = random.choice(tasks)
 
-    return expr, str(correct)
+        return expr, correct
 
-# ------------------- ROUTES -------------------
+    return expr, correct
+
+# ---------------------- ROUTES ----------------------
 
 @app.route("/")
-def difficulty():
+def choose():
     return render_template_string(difficulty_page)
 
 @app.route("/play", methods=["GET", "POST"])
 def play():
+    # POST: checking an answer
     if request.method == "POST":
-        user_answer = request.form["answer"].strip()
-        correct = request.form["correct"].strip()
-        difficulty = int(request.form["difficulty"])
+        correct = float(request.form["correct"])
+        level = int(request.form["difficulty"])
+        user = float(request.form["answer"])
 
-        if user_answer == correct:
-            result = f"✅ Correct! The answer is {correct}"
+        if abs(user - correct) < 0.01:
+            result = f"✅ Correct! Answer: {correct}"
         else:
             result = f"❌ Incorrect. Correct answer: {correct}"
 
-        problem_text, correct_answer = generate_problem(difficulty)
+        problem, new_correct = generate_problem(level)
         return render_template_string(
-            play_page,
-            difficulty=difficulty,
-            stars="⭐" * difficulty,
-            problem_text=problem_text,
-            correct=correct_answer,
+            game_page,
+            problem=problem,
+            correct=new_correct,
             result=result,
+            stars="⭐" * level,
+            difficulty=level
         )
 
-    # GET: first load after selecting difficulty
-    difficulty = int(request.args.get("difficulty", 1))
-    problem_text, correct = generate_problem(difficulty)
+    # GET: first entry after choosing difficulty
+    level = int(request.args.get("difficulty", 1))
+    problem, correct = generate_problem(level)
 
     return render_template_string(
-        play_page,
-        difficulty=difficulty,
-        stars="⭐" * difficulty,
-        problem_text=problem_text,
+        game_page,
+        problem=problem,
         correct=correct,
         result=None,
+        stars="⭐" * level,
+        difficulty=level
     )
 
 
