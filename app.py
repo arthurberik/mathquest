@@ -1,152 +1,205 @@
-"""
-Project: MathQuest — mini-site with math problems
-Author: [your name]
-Description: website where users choose difficulty and solve math tasks
-"""
-
 from flask import Flask, render_template_string, request
 import random
 
 app = Flask(__name__)
 
-# ---------------------- TEMPLATES ----------------------
-
-# Difficulty selection page
+# ─────────────────────────────────────────────
+# 🎨 HTML TEMPLATE — DIFFICULTY SELECTION
+# ─────────────────────────────────────────────
 difficulty_page = """
 <!doctype html>
 <html>
 <head>
     <title>MathQuest — Difficulty</title>
     <style>
-        body { font-family: Arial, sans-serif; background: #f0f2f5; }
-        .container {
-            width: 400px; margin: 80px auto; background: white;
-            padding: 25px; border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.2);
+        body {
+            margin: 0;
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #6a5af9, #8069ff, #4b9bff);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+        }
+        .card {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(12px);
+            padding: 40px;
+            border-radius: 20px;
+            width: 420px;
             text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
         }
-        button {
-            margin: 10px; padding: 12px 20px;
-            font-size: 20px; border-radius: 10px;
-            border: none; background: #4c7bff; color: white;
+        .title {
+            font-size: 38px;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+        .btn {
+            margin: 10px;
+            padding: 12px 25px;
+            font-size: 22px;
+            border-radius: 12px;
+            border: none;
             cursor: pointer;
+            background: linear-gradient(135deg, #4aa3ff, #267fff);
+            color: white;
+            font-weight: bold;
         }
-        button:hover { background: #3659d1; }
-        h1 { color: #333; }
+        .btn:hover {
+            opacity: 0.9;
+        }
     </style>
 </head>
 <body>
-<div class="container">
-    <h1>Select Difficulty</h1>
+
+<div class="card">
+    <div class="title">⭐ MathQuest</div>
+    <h2>Select Difficulty</h2>
+
     <form method="GET" action="/play">
         {% for d in [1,2,3,4,5] %}
-            <button name="difficulty" value="{{d}}">{{ "⭐" * d }}</button>
+            <button class="btn" name="difficulty" value="{{d}}">{{ "⭐" * d }}</button>
         {% endfor %}
     </form>
 </div>
+
 </body>
 </html>
 """
 
-# Problem gameplay page
+# ─────────────────────────────────────────────
+# 🎨 HTML TEMPLATE — GAME SCREEN
+# ─────────────────────────────────────────────
 game_page = """
 <!doctype html>
 <html>
 <head>
     <title>MathQuest</title>
     <style>
-        body { font-family: Arial, sans-serif; background: #f0f2f5; }
-        .container {
-            width: 400px; margin: 80px auto; background: white;
-            padding: 25px; border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.2);
+        body {
+            margin: 0;
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #6a5af9, #8069ff, #4b9bff);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
         }
-        h1 { text-align: center; color: #333; }
-        form { text-align: center; }
+        .card {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(12px);
+            padding: 35px;
+            border-radius: 20px;
+            width: 440px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+        }
+        h1 {
+            margin-top: 0;
+            font-size: 32px;
+            font-weight: bold;
+        }
+        .score {
+            margin: 10px 0;
+            font-size: 20px;
+            color: #ffe58a;
+        }
+        p { font-size: 20px; }
+
         input[type=number] {
-            width: 120px; padding: 6px; font-size: 18px;
+            margin-top: 15px;
+            width: 160px;
+            padding: 10px;
+            font-size: 18px;
+            border-radius: 10px;
+            border: none;
+            outline: none;
         }
-        button {
-            margin-top: 10px; padding: 7px 15px;
-            font-size: 16px; border-radius: 8px;
-            background: #4a78ff; color: white; border: none;
-            cursor: pointer;
-        }
-        button:hover { background: #365bd1; }
-        .result {
-            text-align: center; font-size: 18px;
-            margin-top: 15px; padding: 10px;
-            border-radius: 8px;
-        }
-        .back-btn {
+        .btn {
             margin-top: 20px;
-            background: #ff5b5b;
+            padding: 12px 30px;
+            font-size: 18px;
+            border-radius: 12px;
+            border: none;
+            background: linear-gradient(135deg, #4aa3ff, #267fff);
+            color: white;
+            cursor: pointer;
+            font-weight: bold;
         }
-        .back-btn:hover {
-            background: #d94a4a;
+        .btn:hover { opacity: 0.9; }
+        .back-btn {
+            margin-top: 15px;
+            background: linear-gradient(135deg, #ff6a6a, #ff4646);
+        }
+        .result {
+            margin-top: 20px;
+            font-size: 20px;
+            font-weight: bold;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>MathQuest {{stars}}</h1>
 
-        <form method="POST">
-            <p><b>Task:</b> {{problem}}</p>
+<div class="card">
+    <h1>MathQuest {{stars}}</h1>
 
-            <input type="hidden" name="correct" value="{{correct}}">
-            <input type="hidden" name="difficulty" value="{{difficulty}}">
-            <input type="number" step="0.01" name="answer" required>
+    <div class="score">🎖 Score: {{score}}</div>
 
-            <br><button type="submit">Check</button>
-        </form>
+    <form method="POST">
+        <p><b>Task:</b> {{problem}}</p>
 
-        {% if result %}
+        <input type="hidden" name="correct" value="{{correct}}">
+        <input type="hidden" name="difficulty" value="{{difficulty}}">
+        <input type="hidden" name="score" value="{{score}}">
+
+        <input type="number" step="0.01" name="answer" required>
+        <br>
+        <button class="btn" type="submit">Check</button>
+    </form>
+
+    {% if result %}
         <div class="result">{{ result }}</div>
-        {% endif %}
+    {% endif %}
 
-        <form method="GET" action="/">
-            <button class="back-btn">Change level</button>
-        </form>
-    </div>
+    <form method="GET" action="/">
+        <button class="btn back-btn">Change Level</button>
+    </form>
+</div>
+
 </body>
 </html>
 """
 
-# ---------------------- PROBLEM GENERATION ----------------------
-
+# ─────────────────────────────────────────────
+# 🧠 PROBLEM GENERATION
+# ─────────────────────────────────────────────
 def generate_problem(level):
-    """
-    Generates a problem depending on chosen difficulty level.
-    """
 
-    # ⭐ LEVEL 1 — addition / subtraction
     if level == 1:
         a, b = random.randint(1, 20), random.randint(1, 20)
         op = random.choice(["+", "-"])
         expr = f"{a} {op} {b}"
         return expr, eval(expr)
 
-    # ⭐⭐ LEVEL 2 — multiplication / division
     elif level == 2:
         a, b = random.randint(2, 15), random.randint(2, 15)
         op = random.choice(["*", "/"])
         expr = f"{a} {op} {b}"
         return expr, round(eval(expr), 2)
 
-    # ⭐⭐⭐ LEVEL 3 — multiple operations
     elif level == 3:
         a, b, c = random.randint(1, 15), random.randint(1, 15), random.randint(1, 15)
         expr = f"{a} + {b} * {c}"
-        return expr, a + b * c
+        return expr, a + b*c
 
-    # ⭐⭐⭐⭐ LEVEL 4 — parentheses
     elif level == 4:
         a, b, c = random.randint(1, 15), random.randint(1, 15), random.randint(1, 15)
         expr = f"({a} + {b}) * {c}"
-        return expr, (a + b) * c
+        return expr, (a + b)*c
 
-    # ⭐⭐⭐⭐⭐ LEVEL 5 — harder numeric problems (no SymPy)
     else:
         tasks = [
             ("12²", 144),
@@ -157,7 +210,10 @@ def generate_problem(level):
         ]
         return random.choice(tasks)
 
-# ---------------------- ROUTES ----------------------
+
+# ─────────────────────────────────────────────
+# 🌐 ROUTES
+# ─────────────────────────────────────────────
 
 @app.route("/")
 def home():
@@ -165,28 +221,30 @@ def home():
 
 @app.route("/play", methods=["GET", "POST"])
 def play():
-    # --- POST → checking an answer ---
     if request.method == "POST":
         correct = float(request.form["correct"])
         level = int(request.form["difficulty"])
-        user = float(request.form["answer"])
+        score = int(request.form["score"])
+        user_answer = float(request.form["answer"])
 
-        if abs(user - correct) < 0.01:
-            result = f"✅ Correct! Answer: {correct}"
+        if abs(user_answer - correct) < 0.01:
+            score += 1
+            result = f"✅ Correct! +1 point"
         else:
             result = f"❌ Incorrect. Correct answer: {correct}"
 
         problem, new_correct = generate_problem(level)
+
         return render_template_string(
             game_page,
             problem=problem,
             correct=new_correct,
             difficulty=level,
-            stars="⭐"*level,
+            score=score,
+            stars="⭐" * level,
             result=result
         )
 
-    # --- GET → starting the level ---
     level = int(request.args.get("difficulty", 1))
     problem, correct = generate_problem(level)
 
@@ -195,10 +253,10 @@ def play():
         problem=problem,
         correct=correct,
         difficulty=level,
-        stars="⭐"*level,
+        score=0,
+        stars="⭐" * level,
         result=None
     )
-
 
 if __name__ == "__main__":
     app.run(debug=True)
