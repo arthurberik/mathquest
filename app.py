@@ -1,8 +1,7 @@
-> Ratmir:
 from flask import Flask, render_template_string, request
 import random
 
-app = Flask(name)
+app = Flask(__name__)
 
 # ─────────────────────────────────────────────
 # 🎨 HTML TEMPLATE — DIFFICULTY SELECTION
@@ -15,7 +14,7 @@ difficulty_page = """
     <style>
         body {
             margin: 0;
-            font-family: 'Arial', sans-serif;
+            font-family: Arial, sans-serif;
             background: linear-gradient(135deg, #6a5af9, #8069ff, #4b9bff);
             height: 100vh;
             display: flex;
@@ -61,7 +60,7 @@ difficulty_page = """
 
     <form method="GET" action="/play">
         {% for d in [1,2,3,4,5] %}
-            <button class="btn" name="difficulty" value="{{d}}">{{ "⭐️" * d }}</button>
+            <button class="btn" name="difficulty" value="{{ d }}">{{ "⭐️" * d }}</button>
         {% endfor %}
     </form>
 </div>
@@ -81,7 +80,7 @@ game_page = """
     <style>
         body {
             margin: 0;
-            font-family: 'Arial', sans-serif;
+            font-family: Arial, sans-serif;
             background: linear-gradient(135deg, #6a5af9, #8069ff, #4b9bff);
             height: 100vh;
             display: flex;
@@ -108,8 +107,9 @@ game_page = """
             font-size: 20px;
             color: #ffe58a;
         }
-        p { font-size: 20px; }
-
+        p {
+            font-size: 20px;
+        }
         input[type=number] {
             margin-top: 15px;
             width: 160px;
@@ -130,7 +130,9 @@ game_page = """
             cursor: pointer;
             font-weight: bold;
         }
-        .btn:hover { opacity: 0.9; }
+        .btn:hover {
+            opacity: 0.9;
+        }
         .back-btn {
             margin-top: 15px;
             background: linear-gradient(135deg, #ff6a6a, #ff4646);
@@ -145,17 +147,16 @@ game_page = """
 <body>
 
 <div class="card">
-    <h1>MathQuest {{stars}}</h1>
+    <h1>MathQuest {{ stars }}</h1>
 
-    <div class="score">🎖 Score: {{score}}</div>
+    <div class="score">🎖 Score: {{ score }}</div>
 
     <form method="POST">
-        <p><b>Task:</b> {{problem}}</p>
+        <p><b>Task:</b> {{ problem }}</p>
 
-> Ratmir:
-<input type="hidden" name="correct" value="{{correct}}">
-        <input type="hidden" name="difficulty" value="{{difficulty}}">
-        <input type="hidden" name="score" value="{{score}}">
+        <input type="hidden" name="correct" value="{{ correct }}">
+        <input type="hidden" name="difficulty" value="{{ difficulty }}">
+        <input type="hidden" name="score" value="{{ score }}">
 
         <input type="number" step="0.01" name="answer" required>
         <br>
@@ -179,7 +180,6 @@ game_page = """
 # 🧠 PROBLEM GENERATION
 # ─────────────────────────────────────────────
 def generate_problem(level):
-
     if level == 1:
         a, b = random.randint(1, 20), random.randint(1, 20)
         op = random.choice(["+", "-"])
@@ -195,12 +195,12 @@ def generate_problem(level):
     elif level == 3:
         a, b, c = random.randint(1, 15), random.randint(1, 15), random.randint(1, 10)
         expr = f"{a} + {b} * {c}"
-        return expr, a + b*c
+        return expr, a + b * c
 
     elif level == 4:
         a, b, c = random.randint(1, 15), random.randint(1, 15), random.randint(1, 10)
         expr = f"({a} + {b}) * {c}"
-        return expr, (a + b)*c
+        return expr, (a + b) * c
 
     else:
         tasks = [
@@ -212,11 +212,9 @@ def generate_problem(level):
         ]
         return random.choice(tasks)
 
-
 # ─────────────────────────────────────────────
 # 🌐 ROUTES
 # ─────────────────────────────────────────────
-
 @app.route("/")
 def home():
     return render_template_string(difficulty_page)
@@ -231,7 +229,7 @@ def play():
 
         if abs(user_answer - correct) < 0.01:
             score += 1
-            result = f"✅ Correct! +1 point"
+            result = "✅ Correct! +1 point"
         else:
             result = f"❌ Incorrect. Correct answer: {correct}"
 
@@ -260,5 +258,5 @@ def play():
         result=None
     )
 
-if name == "main":
-    app.run(debug=True)
+if __name__ == "__main__":
+    app.run()
