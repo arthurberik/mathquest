@@ -1,7 +1,8 @@
+> Ratmir:
 from flask import Flask, render_template_string, request
 import random
 
-app = Flask(__name__)
+app = Flask(name)
 
 # ─────────────────────────────────────────────
 # 🎨 HTML TEMPLATE — DIFFICULTY SELECTION
@@ -55,12 +56,12 @@ difficulty_page = """
 <body>
 
 <div class="card">
-    <div class="title">⭐ MathQuest</div>
+    <div class="title">⭐️ MathQuest</div>
     <h2>Select Difficulty</h2>
 
     <form method="GET" action="/play">
         {% for d in [1,2,3,4,5] %}
-            <button class="btn" name="difficulty" value="{{d}}">{{ "⭐" * d }}</button>
+            <button class="btn" name="difficulty" value="{{d}}">{{ "⭐️" * d }}</button>
         {% endfor %}
     </form>
 </div>
@@ -151,7 +152,8 @@ game_page = """
     <form method="POST">
         <p><b>Task:</b> {{problem}}</p>
 
-        <input type="hidden" name="correct" value="{{correct}}">
+> Ratmir:
+<input type="hidden" name="correct" value="{{correct}}">
         <input type="hidden" name="difficulty" value="{{difficulty}}">
         <input type="hidden" name="score" value="{{score}}">
 
@@ -185,18 +187,18 @@ def generate_problem(level):
         return expr, eval(expr)
 
     elif level == 2:
-        a, b = random.randint(2, 15), random.randint(2, 15)
+        a, b = random.randint(2, 10), random.randint(2, 10)
         op = random.choice(["*", "/"])
         expr = f"{a} {op} {b}"
         return expr, round(eval(expr), 2)
 
     elif level == 3:
-        a, b, c = random.randint(1, 15), random.randint(1, 15), random.randint(1, 15)
+        a, b, c = random.randint(1, 15), random.randint(1, 15), random.randint(1, 10)
         expr = f"{a} + {b} * {c}"
         return expr, a + b*c
 
     elif level == 4:
-        a, b, c = random.randint(1, 15), random.randint(1, 15), random.randint(1, 15)
+        a, b, c = random.randint(1, 15), random.randint(1, 15), random.randint(1, 10)
         expr = f"({a} + {b}) * {c}"
         return expr, (a + b)*c
 
@@ -241,7 +243,7 @@ def play():
             correct=new_correct,
             difficulty=level,
             score=score,
-            stars="⭐" * level,
+            stars="⭐️" * level,
             result=result
         )
 
@@ -254,9 +256,9 @@ def play():
         correct=correct,
         difficulty=level,
         score=0,
-        stars="⭐" * level,
+        stars="⭐️" * level,
         result=None
     )
 
-if __name__ == "__main__":
+if name == "main":
     app.run(debug=True)
