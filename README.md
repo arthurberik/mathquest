@@ -29,6 +29,14 @@ Projekt sobib:
 
 
 
+## 🛠 kuidas töötab?
+Projekt on realiseeritud Pythonis, kasutades Flaski.
+Kogu rakenduse loogika töötab serveris Pythoniga.
+HTML ja CSS on kasutusel kasutajaliidese loomiseks, kuid need on otse Python-koodi sisse ehitatud ja genereeritakse serveri poolt.
+JavaScripti projektis ei kasutata.
+
+
+
 ## 📚 Kuidas mängida
 
 1. Ava veebileht
